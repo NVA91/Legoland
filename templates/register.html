@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Registrieren – Legoland DB{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card p-4 mt-3">
+      <h2 class="card-title mb-4 text-center">Registrieren</h2>
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.username.label(class="form-label") }}
+          {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""),
+                           placeholder="Mindestens 3 Zeichen") }}
+          {% for error in form.username.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-3">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
+                           placeholder="Mindestens 8 Zeichen") }}
+          {% for error in form.password.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="d-grid">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+      <p class="text-center mt-3 mb-0">
+        Bereits registriert? <a href="{{ url_for('login') }}">Anmelden</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
