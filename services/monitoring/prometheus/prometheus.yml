@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Prometheus configuration
+# ─────────────────────────────────────────────────────────────────────────────
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus scrapes itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Docker host metrics via node-exporter (add node-exporter service to enable)
+  # - job_name: "node"
+  #   static_configs:
+  #     - targets: ["node-exporter:9100"]
+
+  # cAdvisor for container metrics (add cAdvisor service to enable)
+  # - job_name: "cadvisor"
+  #   static_configs:
+  #     - targets: ["cadvisor:8080"]

@@ -1,0 +1,13 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Legoland – shared infrastructure
+#
+# Defines the external networks that individual service stacks attach to.
+# Start this first before launching any service stack.
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  proxy:
+    name: legoland_proxy
+    driver: bridge
+  monitoring:
+    name: legoland_monitoring
+    driver: bridge

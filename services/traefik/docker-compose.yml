@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Traefik – reverse proxy & automatic TLS via Let's Encrypt
+#
+# Prerequisites:
+#   1. Run `touch acme.json && chmod 600 acme.json` once in this directory.
+#   2. Copy ../.env.example to .env and set DOMAIN / ACME_EMAIL.
+#   3. Ensure the shared networks exist: `docker compose -f ../../docker-compose.yml up -d`
+#
+# Usage:
+#   docker compose up -d
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./acme.json:/acme.json
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=auth"
+      # Set TRAEFIK_DASHBOARD_AUTH in .env (copy .env.example).
+      # Generate value with: echo $(htpasswd -nb admin your_password) | sed -e 's/\$/\$\$/g'
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+
+networks:
+  proxy:
+    external: true
+    name: legoland_proxy
