@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} – Legoland DB{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card p-4 mt-3">
+      <h2 class="card-title mb-4">{{ title }}</h2>
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""),
+                       placeholder="z. B. Millennium Falcon") }}
+          {% for error in form.name.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.set_number.label(class="form-label") }}
+            {{ form.set_number(class="form-control" + (" is-invalid" if form.set_number.errors else ""),
+                               placeholder="z. B. 75192") }}
+            {% for error in form.set_number.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.theme.label(class="form-label") }}
+            {{ form.theme(class="form-control" + (" is-invalid" if form.theme.errors else ""),
+                          placeholder="z. B. Star Wars") }}
+            {% for error in form.theme.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.year.label(class="form-label") }}
+            {{ form.year(class="form-control" + (" is-invalid" if form.year.errors else ""),
+                         placeholder="z. B. 2023") }}
+            {% for error in form.year.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-md-6 mb-3">
+            {{ form.pieces.label(class="form-label") }}
+            {{ form.pieces(class="form-control" + (" is-invalid" if form.pieces.errors else ""),
+                           placeholder="z. B. 7541") }}
+            {% for error in form.pieces.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          {{ form.description.label(class="form-label") }}
+          {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""),
+                              rows=3, placeholder="Optionale Beschreibung …") }}
+          {% for error in form.description.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex gap-2">
+          {{ form.submit(class="btn btn-primary") }}
+          <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Abbrechen</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
