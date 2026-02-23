@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SearXNG settings – tuned for deal/discount and price comparison search
+# ─────────────────────────────────────────────────────────────────────────────
+use_default_settings: true
+
+general:
+  instance_name: "Legoland Search"
+  enable_metrics: false
+
+search:
+  safe_search: 0
+  autocomplete: "duckduckgo"
+  default_lang: "de-DE"
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "CHANGE_ME_TO_A_RANDOM_STRING"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: true
+  image_proxy: true
+
+redis:
+  url: "redis://searxng-redis:6379/0"
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  results_on_new_tab: true
+  theme_args:
+    simple_style: dark
+
+# Engine configuration – prioritise shopping, price comparison, and deals
+engines:
+  # General search (for deal queries)
+  - name: google
+    engine: google
+    shortcut: g
+    weight: 1.5
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    weight: 1.0
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    weight: 1.0
+
+  # Shopping / price comparison
+  - name: google shopping
+    engine: google
+    shortcut: gs
+    categories: shopping
+    weight: 2.0
+
+  # Deal and coupon sites via general search
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    weight: 1.0
+
+  # IT / tech deals
+  - name: github
+    engine: github
+    shortcut: gh
+    categories: it
+    weight: 0.5
+
+  # Currency conversion (useful for cross-border deals)
+  - name: currency
+    engine: currency_convert
+    shortcut: cc
+    categories: general

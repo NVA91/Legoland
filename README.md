@@ -26,9 +26,17 @@ Legoland/
     │   ├── .env.example
     │   └── prometheus/
     │       └── prometheus.yml
-    └── vaultwarden/            # Self-hosted password manager
+    ├── vaultwarden/            # Self-hosted password manager
+    │   ├── docker-compose.yml
+    │   └── .env.example
+    ├── changedetection/        # Price tracking & page change monitor
+    │   ├── docker-compose.yml
+    │   └── .env.example
+    └── searxng/                # Privacy-respecting metasearch (deal search)
         ├── docker-compose.yml
-        └── .env.example
+        ├── .env.example
+        └── config/
+            └── settings.yml    # Engine configuration
 ```
 
 ## Quick start
@@ -80,6 +88,8 @@ make traefik-up
 make portainer-up
 make monitoring-up
 make vaultwarden-up
+make changedetection-up
+make searxng-up
 ```
 
 ### 6 – Stop services
@@ -105,6 +115,12 @@ make down
 | `make vaultwarden-up` | Start Vaultwarden |
 | `make vaultwarden-down` | Stop Vaultwarden |
 | `make vaultwarden-logs` | Follow Vaultwarden logs |
+| `make changedetection-up` | Start Changedetection.io (price tracker) |
+| `make changedetection-down` | Stop Changedetection.io |
+| `make changedetection-logs` | Follow Changedetection.io logs |
+| `make searxng-up` | Start SearXNG (metasearch engine) |
+| `make searxng-down` | Stop SearXNG |
+| `make searxng-logs` | Follow SearXNG logs |
 | `make test` | Run stack validation tests |
 | `make test-quick` | Run quick validation tests |
 
@@ -131,6 +147,18 @@ make down
 - **Purpose:** Self-hosted Bitwarden-compatible password manager
 - **URL:** `https://vault.<DOMAIN>`
 - **Admin panel:** `https://vault.<DOMAIN>/admin` (protected with admin token)
+
+### Changedetection.io (Price Tracking)
+- **Images:** `ghcr.io/dgtlmoon/changedetection.io:0.48`, `browserless/chrome:1-playwright-chromium`
+- **Purpose:** Monitor websites for price changes, stock availability, and page updates with visual diffs
+- **URL:** `https://prices.<DOMAIN>`
+- **Features:** Visual screenshot comparison, CSS/XPath/JSONPath extraction, notifications (email, Telegram, Discord, Slack, webhooks), configurable check intervals, headless browser for JS-rendered pages
+
+### SearXNG (Deal Search)
+- **Images:** `searxng/searxng:2024.12.23-e69b36cc0`, `redis:7-alpine`
+- **Purpose:** Privacy-respecting metasearch engine for discount/deal searching across 70+ search engines
+- **URL:** `https://search.<DOMAIN>`
+- **Features:** Aggregates Google, Bing, DuckDuckGo and more, shopping-focused engine weights, dark theme, German locale default, Redis result caching
 
 ## Testing
 

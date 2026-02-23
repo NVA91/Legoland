@@ -87,6 +87,36 @@ vaultwarden-logs: ## Show Vaultwarden logs
 	$(COMPOSE) -f services/vaultwarden/docker-compose.yml logs -f
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Changedetection (price tracking)
+# ─────────────────────────────────────────────────────────────────────────────
+.PHONY: changedetection-up
+changedetection-up: networks ## Start Changedetection.io (price tracker)
+	$(COMPOSE) -f services/changedetection/docker-compose.yml --env-file .env up -d
+
+.PHONY: changedetection-down
+changedetection-down: ## Stop Changedetection.io
+	$(COMPOSE) -f services/changedetection/docker-compose.yml down
+
+.PHONY: changedetection-logs
+changedetection-logs: ## Show Changedetection.io logs
+	$(COMPOSE) -f services/changedetection/docker-compose.yml logs -f
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SearXNG (deal search)
+# ─────────────────────────────────────────────────────────────────────────────
+.PHONY: searxng-up
+searxng-up: networks ## Start SearXNG (metasearch engine)
+	$(COMPOSE) -f services/searxng/docker-compose.yml --env-file .env up -d
+
+.PHONY: searxng-down
+searxng-down: ## Stop SearXNG
+	$(COMPOSE) -f services/searxng/docker-compose.yml down
+
+.PHONY: searxng-logs
+searxng-logs: ## Show SearXNG logs
+	$(COMPOSE) -f services/searxng/docker-compose.yml logs -f
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Testing
 # ─────────────────────────────────────────────────────────────────────────────
 .PHONY: test
@@ -101,10 +131,12 @@ test-quick: ## Run quick stack validation tests
 # All-in-one
 # ─────────────────────────────────────────────────────────────────────────────
 .PHONY: up
-up: traefik-up portainer-up monitoring-up vaultwarden-up ## Start all services
+up: traefik-up portainer-up monitoring-up vaultwarden-up changedetection-up searxng-up ## Start all services
 
 .PHONY: down
 down: ## Stop all services
+	$(COMPOSE) -f services/searxng/docker-compose.yml down
+	$(COMPOSE) -f services/changedetection/docker-compose.yml down
 	$(COMPOSE) -f services/vaultwarden/docker-compose.yml down
 	$(COMPOSE) -f services/monitoring/docker-compose.yml down
 	$(COMPOSE) -f services/portainer/docker-compose.yml down

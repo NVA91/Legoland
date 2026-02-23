@@ -1,0 +1,106 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Changedetection.io – website change & price tracker
+#
+# Monitors web pages for visual and content changes. Ideal for tracking
+# product prices, stock availability, and deal pages.
+#
+# Features:
+#   - Visual page diff and screenshot comparison
+#   - CSS/XPath/JSONPath price extraction
+#   - Notification support (email, Telegram, Discord, Slack, webhooks, etc.)
+#   - Configurable check intervals per watch
+#   - Browser-based rendering via Playwright for JS-heavy sites
+#
+# Prerequisites:
+#   1. Ensure the shared networks exist: `docker compose -f ../../docker-compose.yml up -d`
+#   2. Traefik must be running for HTTPS routing.
+#   3. Copy .env.example to .env and configure as needed.
+#
+# Usage:
+#   docker compose up -d
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:0.48
+    container_name: changedetection
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+          pids: 150
+    environment:
+      - PORT=5000
+      - PUID=1000
+      - PGID=1000
+      - BASE_URL=https://prices.${DOMAIN}
+      - PLAYWRIGHT_DRIVER_URL=ws://playwright-chrome:3000
+      - TZ=${TZ:-Europe/Berlin}
+    volumes:
+      - changedetection_data:/datastore
+    networks:
+      - proxy
+      - changedetection
+    depends_on:
+      playwright-chrome:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.changedetection.rule=Host(`prices.${DOMAIN}`)"
+      - "traefik.http.routers.changedetection.entrypoints=websecure"
+      - "traefik.http.routers.changedetection.tls.certresolver=letsencrypt"
+      - "traefik.http.services.changedetection.loadbalancer.server.port=5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Headless browser for rendering JavaScript-heavy pages (price trackers, SPAs)
+  playwright-chrome:
+    image: browserless/chrome:1-playwright-chromium
+    container_name: playwright-chrome
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "1.5"
+          pids: 200
+    environment:
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - SCREEN_DEPTH=16
+      - ENABLE_DEBUGGER=false
+      - MAX_CONCURRENT_SESSIONS=${PLAYWRIGHT_MAX_SESSIONS:-3}
+    networks:
+      - changedetection
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/json/version || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  changedetection_data:
+    name: changedetection_data
+
+networks:
+  proxy:
+    external: true
+    name: legoland_proxy
+  changedetection:
+    name: legoland_changedetection
