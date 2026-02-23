@@ -72,13 +72,40 @@ monitoring-logs: ## Show monitoring stack logs
 	$(COMPOSE) -f services/monitoring/docker-compose.yml logs -f
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Vaultwarden
+# ─────────────────────────────────────────────────────────────────────────────
+.PHONY: vaultwarden-up
+vaultwarden-up: networks ## Start Vaultwarden
+	$(COMPOSE) -f services/vaultwarden/docker-compose.yml --env-file .env up -d
+
+.PHONY: vaultwarden-down
+vaultwarden-down: ## Stop Vaultwarden
+	$(COMPOSE) -f services/vaultwarden/docker-compose.yml down
+
+.PHONY: vaultwarden-logs
+vaultwarden-logs: ## Show Vaultwarden logs
+	$(COMPOSE) -f services/vaultwarden/docker-compose.yml logs -f
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Testing
+# ─────────────────────────────────────────────────────────────────────────────
+.PHONY: test
+test: ## Run stack validation tests
+	./tests/test-stack.sh
+
+.PHONY: test-quick
+test-quick: ## Run quick stack validation tests
+	./tests/test-stack.sh --quick
+
+# ─────────────────────────────────────────────────────────────────────────────
 # All-in-one
 # ─────────────────────────────────────────────────────────────────────────────
 .PHONY: up
-up: traefik-up portainer-up monitoring-up ## Start all services
+up: traefik-up portainer-up monitoring-up vaultwarden-up ## Start all services
 
 .PHONY: down
 down: ## Stop all services
+	$(COMPOSE) -f services/vaultwarden/docker-compose.yml down
 	$(COMPOSE) -f services/monitoring/docker-compose.yml down
 	$(COMPOSE) -f services/portainer/docker-compose.yml down
 	$(COMPOSE) -f services/traefik/docker-compose.yml down

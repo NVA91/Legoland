@@ -10,6 +10,8 @@ Legoland/
 ├── docker-compose.yml          # Shared infrastructure (networks)
 ├── .env.example                # Global environment variables
 ├── Makefile                    # Convenience commands
+├── tests/
+│   └── test-stack.sh           # Stack validation test suite
 └── services/
     ├── traefik/                # Reverse proxy + automatic HTTPS (Let's Encrypt)
     │   ├── docker-compose.yml
@@ -19,11 +21,14 @@ Legoland/
     ├── portainer/              # Docker management UI
     │   ├── docker-compose.yml
     │   └── .env.example
-    └── monitoring/             # Prometheus + Grafana
+    ├── monitoring/             # Prometheus + Grafana
+    │   ├── docker-compose.yml
+    │   ├── .env.example
+    │   └── prometheus/
+    │       └── prometheus.yml
+    └── vaultwarden/            # Self-hosted password manager
         ├── docker-compose.yml
-        ├── .env.example
-        └── prometheus/
-            └── prometheus.yml
+        └── .env.example
 ```
 
 ## Quick start
@@ -74,6 +79,7 @@ Or start individual stacks:
 make traefik-up
 make portainer-up
 make monitoring-up
+make vaultwarden-up
 ```
 
 ### 6 – Stop services
@@ -96,6 +102,11 @@ make down
 | `make traefik-logs` | Follow Traefik logs |
 | `make portainer-logs` | Follow Portainer logs |
 | `make monitoring-logs` | Follow monitoring stack logs |
+| `make vaultwarden-up` | Start Vaultwarden |
+| `make vaultwarden-down` | Stop Vaultwarden |
+| `make vaultwarden-logs` | Follow Vaultwarden logs |
+| `make test` | Run stack validation tests |
+| `make test-quick` | Run quick validation tests |
 
 ## Services
 
@@ -115,6 +126,28 @@ make down
 - **Prometheus:** `https://prometheus.<DOMAIN>`
 - **Grafana:** `https://grafana.<DOMAIN>` (default login: `admin` / value of `GRAFANA_ADMIN_PASSWORD`)
 
+### Vaultwarden
+- **Image:** `vaultwarden/server:1.32.7`
+- **Purpose:** Self-hosted Bitwarden-compatible password manager
+- **URL:** `https://vault.<DOMAIN>`
+- **Admin panel:** `https://vault.<DOMAIN>/admin` (protected with admin token)
+
+## Testing
+
+Run the test suite to validate compose files, security policies, and configuration consistency:
+
+```bash
+make test        # full test suite
+make test-quick  # skip slow checks
+```
+
+The test suite validates:
+- Compose file syntax and configuration
+- Security policies (no-new-privileges, cap_drop, resource limits, healthchecks, pids_limit)
+- Configuration consistency (.env.example files, network attachment, Traefik labels)
+- Docker socket mount security (read-only)
+- Makefile target coverage for all services
+
 ## Adding a new service
 
 1. Create a new directory under `services/<name>/`.
@@ -130,6 +163,19 @@ services:
     image: myapp:latest
     container_name: myapp
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+          pids: 100
     networks:
       - proxy
     labels:
@@ -137,6 +183,12 @@ services:
       - "traefik.http.routers.myapp.rule=Host(`myapp.${DOMAIN}`)"
       - "traefik.http.routers.myapp.entrypoints=websecure"
       - "traefik.http.routers.myapp.tls.certresolver=letsencrypt"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 networks:
   proxy:
@@ -150,3 +202,17 @@ networks:
 - Traefik dashboard is protected by HTTP basic auth; change the default credentials before exposing it.
 - `acme.json` (TLS certificates) is also excluded from version control.
 - Use the Let's Encrypt staging server (`caServer` option in `traefik.yml`) during initial setup to avoid rate limits.
+
+### Container hardening
+
+All services are hardened with the following security defaults:
+
+- **`no-new-privileges: true`** — prevents privilege escalation inside containers
+- **`cap_drop: ALL`** — drops all Linux capabilities; only required caps are added back via `cap_add`
+- **`read_only: true`** — read-only root filesystem (where supported); writable `/tmp` via `tmpfs`
+- **Resource limits** — memory and CPU caps prevent runaway containers
+- **`pids` limit** — caps process count to prevent fork bombs
+- **Healthchecks** — every service has a health probe for automated restart and monitoring
+- **Docker socket** — mounted read-only (`:ro`) on services that require it
+
+Run `make test` to verify all security policies are applied correctly.

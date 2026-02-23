@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Vaultwarden – self-hosted Bitwarden-compatible password manager
+#
+# Prerequisites:
+#   1. Ensure the shared networks exist: `docker compose -f ../../docker-compose.yml up -d`
+#   2. Traefik must be running for HTTPS routing.
+#   3. Copy .env.example to .env and set VAULTWARDEN_ADMIN_TOKEN.
+#
+# Usage:
+#   docker compose up -d
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.32.7
+    container_name: vaultwarden
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+          pids: 100
+    environment:
+      - DOMAIN=https://vault.${DOMAIN}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
+      - INVITATIONS_ALLOWED=true
+      - SHOW_PASSWORD_HINT=false
+      - ROCKET_PORT=8080
+      - TZ=${TZ:-Europe/Berlin}
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      # Web UI
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`)"
+      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vaultwarden.loadbalancer.server.port=8080"
+      # Admin panel – restrict access via IP allowlist middleware (optional)
+      - "traefik.http.routers.vaultwarden-admin.rule=Host(`vault.${DOMAIN}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.vaultwarden-admin.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vaultwarden-admin.service=vaultwarden"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/alive || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  vaultwarden_data:
+    name: vaultwarden_data
+
+networks:
+  proxy:
+    external: true
+    name: legoland_proxy

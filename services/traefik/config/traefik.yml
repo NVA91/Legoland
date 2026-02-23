@@ -18,6 +18,9 @@ accessLog: {}
 api:
   dashboard: true
 
+# Health check endpoint
+ping: {}
+
 # Entrypoints
 entryPoints:
   web:
